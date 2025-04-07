@@ -1,7 +1,8 @@
 from utils.core import *
 import numpy as np
 
-def interact(agent, world):
+
+def interact(agent, world, sim_agents):
     """Carries out interaction for this agent taking this action in this world.
 
     The action that needs to be executed is stored in `agent.action`.
@@ -13,9 +14,28 @@ def interact(agent, world):
 
     action_x, action_y = world.inbounds(tuple(np.asarray(agent.location) + np.asarray(agent.action)))
     gs = world.get_gridsquare_at((action_x, action_y))
-
+    
+    # -----------------------
+    # -----------------------
+    # KIRIN ADDED
+    # Check if there's another agent at the target location
+    target_agent = None
+    for other_agent in sim_agents:
+        if other_agent != agent and other_agent.location == (action_x, action_y):
+            target_agent = other_agent
+            break
+    
+    # if another agent in front --> try passing object
+    if target_agent is not None and agent.holding is not None:
+        if target_agent.holding is None:  # Only pass if other agent's hands are empty
+            obj = agent.holding
+            agent.release()
+            target_agent.acquire(obj)
+            print(f'\nPassed {obj.full_name} from {agent.name} to {target_agent.name}!')
+    # -----------------------
+    
     # if floor in front --> move to that square
-    if isinstance(gs, Floor): #and gs.holding is None:
+    elif isinstance(gs, Floor): #and gs.holding is None:
         agent.move_to(gs.location)
 
     # if holding something
@@ -72,3 +92,5 @@ def interact(agent, world):
         # if empty in front --> interact
         elif not world.is_occupied(gs.location):
             pass
+ 
+        

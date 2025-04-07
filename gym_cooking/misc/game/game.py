@@ -106,7 +106,12 @@ class Game:
     def draw_agent(self, agent):
         self.draw('agent-{}'.format(agent.color),
             self.tile_size, self.scaled_location(agent.location))
-        self.draw_agent_object(agent.holding)
+         # Check if agent.holding is a list (delivery agent)
+        if isinstance(agent.holding, list):
+            for obj in agent.holding:
+                self.draw_agent_object(obj)
+        else:
+            self.draw_agent_object(agent.holding)
 
     def draw_agent_object(self, obj):
         # Holding shows up in bottom right corner.

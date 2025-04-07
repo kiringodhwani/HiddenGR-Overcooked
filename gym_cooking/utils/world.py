@@ -232,16 +232,22 @@ class World:
             all_obs += o
         return all_obs
 
+    # ----------------------------------------
+    # ----------------------------------------
+    # KIRIN Changed to fix weird KeyError issue
     def get_dynamic_objects(self):
         """Get objects that can be moved."""
         objs = list()
 
         for key in sorted(self.objects.keys()):
-            if key != "Counter" and key != "Floor" and "Supply" not in key and key != "Delivery" and key != "Cutboard":
+            if (key != "Counter" and key != "Floor" and 
+            "Supply" not in key and key != "Delivery" and 
+            key != "Cutboard" and self.objects[key]):  # Only process non-empty lists
                 objs.append(tuple(list(map(lambda o: o.get_repr(), self.objects[key]))))
 
         # Must return a tuple because this is going to get hashed.
         return tuple(objs)
+    # ----------------------------------------
 
     def get_collidable_objects(self):
         return list(filter(lambda o : o.collidable, self.get_object_list()))

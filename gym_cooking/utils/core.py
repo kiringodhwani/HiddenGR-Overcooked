@@ -24,6 +24,14 @@ class Rep:
     LETTUCE = 'l'
     ONION = 'o'
     PLATE = 'p'
+    
+    # --------------------
+    # --------------------
+    # KIRIN Added
+    SUSHI = 's'  
+    WATER = 'w'   
+    EGG = 'e'  
+    BREAD = 'b' 
 
 class GridSquare:
     def __init__(self, name, location):
@@ -322,6 +330,101 @@ class Onion(Food):
     def __hash__(self):
         return Food.__hash__(self)
 
+# --------------------
+# --------------------
+# KIRIN Added
+class Sushi(Food):
+    def __init__(self, state_index=1):  # Default to CHOPPED
+        self.state_index = state_index
+        self.state_seq = FoodSequence.FRESH_CHOPPED
+        self.rep = 's'
+        self.name = 'Sushi'
+        Food.__init__(self)
+        
+    def __hash__(self):
+        return Food.__hash__(self)
+    
+    def __eq__(self, other):
+        return Food.__eq__(self, other)
+    
+    def __str__(self):
+        return Food.__str__(self)
+    
+    def needs_chopped(self):
+        return False
+    
+    def is_chopped(self):
+        return True
+
+class Water(Food):
+    def __init__(self, state_index=1):  # Default to CHOPPED
+        self.state_index = state_index
+        self.state_seq = FoodSequence.FRESH_CHOPPED
+        self.rep = 'w'
+        self.name = 'Water'
+        Food.__init__(self)
+        
+    def __hash__(self):
+        return Food.__hash__(self)
+    
+    def __eq__(self, other):
+        return Food.__eq__(self, other)
+    
+    def __str__(self):
+        return Food.__str__(self)
+    
+    def needs_chopped(self):
+        return False
+    
+    def is_chopped(self):
+        return True
+    
+    
+class Egg(Food):
+    def __init__(self, state_index=1):  # Default to CHOPPED
+        self.state_index = state_index
+        self.state_seq = FoodSequence.FRESH_CHOPPED
+        self.rep = 'e'
+        self.name = 'Egg'
+        Food.__init__(self)
+        
+    def __hash__(self):
+        return Food.__hash__(self)
+    
+    def __eq__(self, other):
+        return Food.__eq__(self, other)
+    
+    def __str__(self):
+        return Food.__str__(self)
+    
+    def needs_chopped(self):
+        return False
+    
+    def is_chopped(self):
+        return True
+
+class Bread(Food):
+    def __init__(self, state_index=1):  # Default to CHOPPED
+        self.state_index = state_index
+        self.state_seq = FoodSequence.FRESH_CHOPPED
+        self.rep = 'b'
+        self.name = 'Bread'
+        Food.__init__(self)
+        
+    def __hash__(self):
+        return Food.__hash__(self)
+    
+    def __eq__(self, other):
+        return Food.__eq__(self, other)
+    
+    def __str__(self):
+        return Food.__str__(self)
+    
+    def needs_chopped(self):
+        return False
+    
+    def is_chopped(self):
+        return True
 
 # -----------------------------------------------------------
 
@@ -355,7 +458,17 @@ RepToClass = {
     Rep.LETTUCE: globals()['Lettuce'],
     Rep.ONION: globals()['Onion'],
     Rep.PLATE: globals()['Plate'],
+    
+    # --------------------
+    # --------------------
+    # KIRIN Added
+    Rep.SUSHI: globals()['Sushi'],  
+    Rep.WATER: globals()['Water'],   
+    Rep.EGG: globals()['Egg'],  
+    Rep.BREAD: globals()['Bread'], 
 }
+
+
 
 
 

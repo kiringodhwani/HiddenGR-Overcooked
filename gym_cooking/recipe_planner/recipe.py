@@ -95,5 +95,37 @@ class OnionSalad(Recipe):
         self.add_ingredient(Onion(state_index=-1))
         self.add_goal()
         self.add_merge_actions()
+        
 
+# --------------------      
+# --------------------
+# KIRIN Added
 
+class SimpleSushi(Recipe):
+    def __init__(self):
+        Recipe.__init__(self, 'Sushi')  # Use full state name
+        self.add_ingredient(Sushi(state_index=1))
+        self.add_goal()
+        self.add_merge_actions()
+
+class SimpleWater(Recipe):
+    def __init__(self):
+        Recipe.__init__(self, 'Water')  # Use full state name
+        self.add_ingredient(Water(state_index=1))
+        self.add_goal()
+        self.add_merge_actions()
+        
+        
+class SimpleEgg(Recipe):
+    def __init__(self):
+        Recipe.__init__(self, 'Egg')  # Use full state name
+        self.add_ingredient(Egg(state_index=1))
+        self.add_goal()
+        self.add_merge_actions()
+
+class SimpleBread(Recipe):
+    def __init__(self):
+        Recipe.__init__(self, 'Bread')  # Use full state name
+        self.add_ingredient(Bread(state_index=1))
+        self.add_goal()
+        self.add_merge_actions()

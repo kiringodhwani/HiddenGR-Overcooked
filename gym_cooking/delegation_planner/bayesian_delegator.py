@@ -160,11 +160,30 @@ class BayesianDelegator(Delegator):
             total_weight = 0
             for t in subtask_alloc:
                 if t.subtask is not None:
-                    # Calculate prior with this agent's planner.
-                    total_weight += 1.0 / float(self.get_lower_bound_for_subtask_alloc(
+                      # ORIGINAL
+#                     # Calculate prior with this agent's planner.
+#                     total_weight += 1.0 / float(self.get_lower_bound_for_subtask_alloc(
+#                         obs=copy.copy(obs),
+#                         subtask=t.subtask,
+#                         subtask_agent_names=t.subtask_agent_names))
+                    
+                    # ----------------------------------------
+                    # ----------------------------------------
+                    # KIRIN Added to fix DivByZero error
+                    lower_bound = self.get_lower_bound_for_subtask_alloc(
                         obs=copy.copy(obs),
                         subtask=t.subtask,
-                        subtask_agent_names=t.subtask_agent_names))
+                        subtask_agent_names=t.subtask_agent_names)
+                    
+                    if lower_bound == 0:
+                        # Handle the zero case appropriately, maybe:
+                        weight = 0  # or some default value
+                    else:
+                        weight = 1.0 / float(lower_bound)
+                        
+                    total_weight += weight
+                    # ----------------------------------------
+                    
             # Weight by number of nonzero subtasks.
             some_probs.update(
                     subtask_alloc=subtask_alloc,
@@ -215,9 +234,12 @@ class BayesianDelegator(Delegator):
             other_planners = self.get_other_agent_planners(
                     obs=obs_tm1, backup_subtask=backup_subtask)
         return state, other_planners
-
+    
+    ## -------------------
+    ## -------------------
+    ## KIRIN EDITED ------
     def prob_nav_actions(self, obs_tm1, actions_tm1, subtask,
-            subtask_agent_names, beta, no_level_1):
+        subtask_agent_names, beta, no_level_1):
         """Return probabability that subtask_agents performed subtask, given
         previous observations (obs_tm1) and actions (actions_tm1).
 
@@ -268,9 +290,35 @@ class BayesianDelegator(Delegator):
         # Collect actions the agents could have taken in obs_tm1.
         valid_nav_actions = self.planner.get_actions(state_repr=obs_tm1.get_repr())
 
-        # Check action taken is in the list of actions available to agents in obs_tm1.
-        assert action in valid_nav_actions, "valid_nav_actions: {}\nlocs: {}\naction: {}".format(
-                valid_nav_actions, list(filter(lambda a: a.location, state.sim_agents)), action)
+        # Check if action is valid, with special handling for handoffs
+        if action not in valid_nav_actions:
+            # Check if this is a handoff action (one agent is adjacent to another)
+            agent_locations = [a.location for a in obs_tm1.sim_agents 
+                              if a.name in self.all_agent_names]
+
+            # Check if agents are adjacent (Manhattan distance of 1)
+            are_adjacent = False
+            if len(agent_locations) >= 2:
+                dist = abs(agent_locations[0][0] - agent_locations[1][0]) + \
+                      abs(agent_locations[0][1] - agent_locations[1][1])
+                are_adjacent = (dist == 1)
+
+            # Check for object transfer (handoff)
+            handoff_occurred = False
+            for agent in obs_tm1.sim_agents:
+                if hasattr(agent, 'holding') and agent.holding is not None:
+                    # If agent is holding something, it might be a handoff
+                    handoff_occurred = True
+                    break
+
+            if are_adjacent and handoff_occurred:
+                print(f"Detected handoff action: {action}")
+                # Return a high probability for handoff actions since they're intentional
+                return 0.9
+            else:
+                # Still raise error for truly invalid actions
+                assert action in valid_nav_actions, "valid_nav_actions: {}\nlocs: {}\naction: {}".format(
+                    valid_nav_actions, list(filter(lambda a: a.name in self.all_agent_names, obs_tm1.sim_agents)), action)
 
         # If subtask allocation is joint, then find joint actions that match what the other
         # agent's action_tm1.
@@ -284,6 +332,75 @@ class BayesianDelegator(Delegator):
         softmax_diffs = sp.special.softmax(beta * np.asarray(qdiffs))
         # Taking the softmax of the action actually taken.
         return softmax_diffs[valid_nav_actions.index(action)]
+
+#     def prob_nav_actions(self, obs_tm1, actions_tm1, subtask,
+#             subtask_agent_names, beta, no_level_1):
+#         """Return probabability that subtask_agents performed subtask, given
+#         previous observations (obs_tm1) and actions (actions_tm1).
+
+#         Args:
+#             obs_tm1: Copy of environment object. Represents environment at t-1.
+#             actions_tm1: Dictionary of agent actions. Maps agent str names to tuple actions.
+#             subtask: Subtask object to perform inference for.
+#             subtask_agent_names: Tuple of agent str names, of agents who perform subtask.
+#                 subtask and subtask_agent_names make up subtask allocation.
+#             beta: Beta float value for softmax function.
+#             no_level_1: Bool, whether to turn off level-k planning.
+#         Returns:
+#             A float probability update of whether agents in subtask_agent_names are
+#             performing subtask.
+#         """
+#         print("[BayesianDelgation.prob_nav_actions] Calculating probs for subtask {} by {}".format(str(subtask), ' & '.join(subtask_agent_names)))
+#         assert len(subtask_agent_names) == 1 or len(subtask_agent_names) == 2
+
+#         # Perform inference over None subtasks.
+#         if subtask is None:
+#             assert len(subtask_agent_names) != 2, "Two agents are doing None."
+#             sim_agent = list(filter(lambda a: a.name == self.agent_name, obs_tm1.sim_agents))[0]
+#             # Get the number of possible actions at obs_tm1 available to agent.
+#             num_actions = len(get_single_actions(env=obs_tm1, agent=sim_agent)) -1
+#             action_prob = (1.0 - self.none_action_prob)/(num_actions)    # exclude (0, 0)
+#             diffs = [self.none_action_prob] + [action_prob] * num_actions
+#             softmax_diffs = sp.special.softmax(beta * np.asarray(diffs))
+#             # Probability agents did nothing for None subtask.
+#             if actions_tm1[subtask_agent_names[0]] == (0, 0):
+#                 return softmax_diffs[0]
+#             # Probability agents moved for None subtask.
+#             else:
+#                 return softmax_diffs[1]
+
+#         # Perform inference over all non-None subtasks.
+#         # Calculate Q_{subtask}(obs_tm1, action) for all actions.
+#         action = tuple([actions_tm1[a_name] for a_name in subtask_agent_names])
+#         if len(subtask_agent_names) == 1:
+#             action = action[0]
+#         state, other_planners = self.get_appropriate_state_and_other_agent_planners(
+#                 obs_tm1=obs_tm1, backup_subtask=subtask, no_level_1=no_level_1)
+#         self.planner.set_settings(env=obs_tm1, subtask=subtask,
+#                 subtask_agent_names=subtask_agent_names,
+#                 other_agent_planners=other_planners)
+#         old_q = self.planner.Q(state=state, action=action,
+#                 value_f=self.planner.v_l)
+
+#         # Collect actions the agents could have taken in obs_tm1.
+#         valid_nav_actions = self.planner.get_actions(state_repr=obs_tm1.get_repr())
+
+#         # Check action taken is in the list of actions available to agents in obs_tm1.
+#         assert action in valid_nav_actions, "valid_nav_actions: {}\nlocs: {}\naction: {}".format(
+#                 valid_nav_actions, list(filter(lambda a: a.location, state.sim_agents)), action)
+
+#         # If subtask allocation is joint, then find joint actions that match what the other
+#         # agent's action_tm1.
+#         if len(subtask_agent_names) == 2 and self.agent_name in subtask_agent_names:
+#             other_index = 1 - subtask_agent_names.index(self.agent_name)
+#             valid_nav_actions = list(filter(lambda x: x[other_index] == action[other_index], valid_nav_actions))
+
+#         # Calculating the softmax Q_{subtask} for each action.
+#         qdiffs = [old_q - self.planner.Q(state=state, action=nav_action, value_f=self.planner.v_l)
+#                 for nav_action in valid_nav_actions]
+#         softmax_diffs = sp.special.softmax(beta * np.asarray(qdiffs))
+#         # Taking the softmax of the action actually taken.
+#         return softmax_diffs[valid_nav_actions.index(action)]
 
     def get_other_subtask_allocations(self, remaining_agents, remaining_subtasks, base_subtask_alloc):
         """Return a list of subtask allocations to be added onto `subtask_allocs`.

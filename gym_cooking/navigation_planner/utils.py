@@ -13,12 +13,28 @@ StringToGridSquare = {
         "Plate"    : Counter,
         "Cutboard" : Cutboard,
         "Delivery" : Delivery,
+    
+        # --------------------      
+        # --------------------
+        # KIRIN Added
+        "Sushi"    : Counter,
+        "Water"    : Counter,
+        "Egg"      : Counter,
+        "Bread"    : Counter,
         }
 
 StringToObject = {
         "Tomato"  : Tomato,
         "Lettuce" : Lettuce,
         "Onion"   : Onion,
+    
+        # --------------------      
+        # --------------------
+        # KIRIN Added
+        "Sushi"    : Sushi,
+        "Water"    : Water,
+        "Egg"      : Egg,
+        "Bread"    : Bread,
         }
 
 
@@ -202,6 +218,16 @@ def get_subtask_obj(subtask):
 
     elif subtask is None:
         return None, None
+    
+    # ----------------------------------------
+    # ----------------------------------------
+    # KIRIN Added
+    elif isinstance(subtask, recipe.Get):
+        # For Get subtasks, return the object in its first state
+        start_obj = get_obj(obj_string=subtask.args[0],
+                type_="is_object", state=FoodState.FRESH)
+        goal_obj = start_obj
+    # ----------------------------------------
 
     else:
         raise NotImplementedError("{} was not recognized".format(subtask))

@@ -98,16 +98,26 @@ class OvercookedEnvironment(gym.Env):
                 line = line.strip('\n')
                 if line == '':
                     phase += 1
-
                 # Phase 1: Read in kitchen map.
                 elif phase == 1:
                     for x, rep in enumerate(line):
-                        # Object, i.e. Tomato, Lettuce, Onion, or Plate.
-                        if rep in 'tlop':
+                        
+                        # Object, i.e. Tomato, Lettuce, Onion, Plate, Sushi, Water.
+                        
+                        # ----------------------------------------      
+                        # ----------------------------------------
+                        # KIRIN Added
+                        if rep in 'tlopsweb':
                             counter = Counter(location=(x, y))
-                            obj = Object(
-                                    location=(x, y),
-                                    contents=RepToClass[rep]())
+                            # For Sushi and Water, create an Object with a Plate by default
+                            if rep in ['s', 'w', 'e', 'b']:
+                                obj = Object(
+                                        location=(x, y),
+                                        contents=[RepToClass[rep](), Plate()])
+                            else:
+                                obj = Object(
+                                        location=(x, y),
+                                        contents=RepToClass[rep]())
                             counter.acquire(obj=obj)
                             self.world.insert(obj=counter)
                             self.world.insert(obj=obj)
@@ -123,7 +133,6 @@ class OvercookedEnvironment(gym.Env):
                 # Phase 2: Read in recipe list.
                 elif phase == 2:
                     self.recipes.append(globals()[line]())
-
                 # Phase 3: Read in agent locations (up to num_agents).
                 elif phase == 3:
                     if len(self.sim_agents) < num_agents:
@@ -133,7 +142,6 @@ class OvercookedEnvironment(gym.Env):
                                 id_color=COLORS[len(self.sim_agents)],
                                 location=(int(loc[0]), int(loc[1])))
                         self.sim_agents.append(sim_agent)
-
         self.distances = {}
         self.world.width = x+1
         self.world.height = y
@@ -165,15 +173,21 @@ class OvercookedEnvironment(gym.Env):
         self.cache_distances()
         self.obs_tm1 = copy.copy(self)
 
-        if self.arglist.record or self.arglist.with_image_obs:
-            self.game = GameImage(
-                    filename=self.filename,
-                    world=self.world,
-                    sim_agents=self.sim_agents,
-                    record=self.arglist.record)
-            self.game.on_init()
-            if self.arglist.record:
-                self.game.save_image_obs(self.t)
+        
+        # ----------------------------------------      
+        # ----------------------------------------
+        # KIRIN CHANGED
+        
+        #if self.arglist.record or self.arglist.with_image_obs:
+        self.game = GameImage(
+                filename=self.filename,
+                world=self.world,
+                sim_agents=self.sim_agents,
+                record=self.arglist.record)
+        self.game.on_init()
+        if self.arglist.record:
+            self.game.save_image_obs(self.t)
+        # ----------------------------------------
 
         return copy.copy(self)
 
@@ -400,6 +414,22 @@ class OvercookedEnvironment(gym.Env):
         # Check each pairwise collision between agents.
         for i, j in combinations(range(len(self.sim_agents)), 2):
             agent_i, agent_j = self.sim_agents[i], self.sim_agents[j]
+            
+            # SPECIAL CASE: Allow moving toward another agent if a handoff is possible
+            # (agent is holding something, other agent has empty hands)
+            if (agent_i.holding is not None and agent_j.holding is None and 
+                self.is_adjacent(agent_i.location, agent_j.location) and
+                agent_i.action == self.get_direction_to(agent_i.location, agent_j.location)):
+                # Skip collision detection to allow the handoff
+                continue
+
+            if (agent_j.holding is not None and agent_i.holding is None and 
+                self.is_adjacent(agent_j.location, agent_i.location) and
+                agent_j.action == self.get_direction_to(agent_j.location, agent_i.location)):
+                # Skip collision detection to allow the handoff
+                continue
+            
+            
             exec_ = self.is_collision(
                     agent1_loc=agent_i.location,
                     agent2_loc=agent_j.location,
@@ -427,10 +457,25 @@ class OvercookedEnvironment(gym.Env):
             if not execute[i]:
                 agent.action = (0, 0)
             print("{} has action {}".format(color(agent.name, agent.color), agent.action))
+            
+            
+    def is_adjacent(self, pos1, pos2):
+        """Check if two positions are adjacent."""
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1]) == 1
+
+    def get_direction_to(self, from_pos, to_pos):
+        """Get the direction to move from from_pos to to_pos."""
+        dx = to_pos[0] - from_pos[0]
+        dy = to_pos[1] - from_pos[1]
+
+        if abs(dx) > abs(dy):
+            return (1 if dx > 0 else -1, 0) if dx != 0 else (0, 0)
+        else:
+            return (0, 1 if dy > 0 else -1) if dy != 0 else (0, 0)
 
     def execute_navigation(self):
         for agent in self.sim_agents:
-            interact(agent=agent, world=self.world)
+            interact(agent=agent, world=self.world, sim_agents=self.sim_agents)
             self.agent_actions[agent.name] = agent.action
 
 
@@ -469,4 +514,3 @@ class OvercookedEnvironment(gym.Env):
 
         # Save all distances under world as well.
         self.world.distances = self.distances
-

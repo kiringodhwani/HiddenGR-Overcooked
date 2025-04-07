@@ -2,7 +2,7 @@
 # from gym_cooking.envs import OvercookedEnvironment
 from recipe_planner.recipe import *
 from utils.world import World
-from utils.agent import RealAgent, SimAgent, COLORS
+from utils.agent import RealAgent, SimAgent, COLORS, FetchingAgent, HybridAgent
 from utils.core import *
 from misc.game.gameplay import GamePlay
 from misc.metrics.metrics_bag import Bag
@@ -13,6 +13,14 @@ import argparse
 from collections import namedtuple
 
 import gym
+
+# -----------------------
+# -----------------------
+# KIRIN ADDED
+from overcooked_gr_experiments import OvercookedGRExperiment
+from ml.metrics import kl_divergence_norm_softmax, soft_divergence_point, trajectory_q_value
+from ml.rl import TabularQLearner
+# -----------------------
 
 
 def parse_arguments():
@@ -46,6 +54,21 @@ def parse_arguments():
     parser.add_argument("--model2", type=str, default=None, help="Model type for agent 2 (bd, up, dc, fb, or greedy)")
     parser.add_argument("--model3", type=str, default=None, help="Model type for agent 3 (bd, up, dc, fb, or greedy)")
     parser.add_argument("--model4", type=str, default=None, help="Model type for agent 4 (bd, up, dc, fb, or greedy)")
+    
+    # -----------------------
+    # -----------------------
+    # KIRIN ADDED
+    # Goal Recognition arguments
+    parser.add_argument("--gr-experiments", action="store_true", default=False, help="Run goal recognition experiments")
+    parser.add_argument("--evaluation-method", type=str, default="kl", choices=["kl", "dp", "q_value"],
+                        help="Evaluation method for goal recognition: kl (KL divergence), dp (divergence point), q_value (trajectory Q-value)")
+    parser.add_argument("--obs-levels", type=str, default="1.0",
+                        help="Observation levels for goal recognition (comma-separated)")
+    parser.add_argument("--num-trials", type=int, default=10,
+                        help="Number of trials for each agent-recipe combination")
+    parser.add_argument("--train-policies", action="store_true", default=False,
+                        help="Force training new policies even if pre-trained ones exist")
+    # -----------------------
 
     return parser.parse_args()
 
@@ -73,11 +96,48 @@ def initialize_agents(arglist):
             elif phase == 3:
                 if len(real_agents) < arglist.num_agents:
                     loc = line.split(' ')
-                    real_agent = RealAgent(
+#                     real_agent = RealAgent(
+#                             arglist=arglist,
+#                             name='agent-'+str(len(real_agents)+1),
+#                             id_color=COLORS[len(real_agents)],
+#                             recipes=recipes)
+
+                    # ----------------------------------------
+                    # ----------------------------------------
+                    # KIRIN Added
+#                     if len(real_agents)+1 == 1:
+#                         print(f'Initializing agent {len(real_agents)+1} with no recipes at location ({loc[0]}, {loc[1]})')
+#                         real_agent = RealAgent(
+#                                 arglist=arglist,
+#                                 name='agent-'+str(len(real_agents)+1),
+#                                 id_color=COLORS[len(real_agents)],
+#                                 recipes=[])
+                    
+                    # MAKE AGENT 1 A FETCHINGAGENT
+                    if len(real_agents)+1 == 1:
+                        print(f'Initializing FetchingAgent {len(real_agents)+1} at location ({loc[0]}, {loc[1]})')
+                        real_agent = FetchingAgent(
+                                arglist=arglist,
+                                name='agent-'+str(len(real_agents)+1),
+                                color=COLORS[len(real_agents)])
+                        
+                    else:
+#                         print(f'Initializing agent {len(real_agents)+1} regularly at location ({loc[0]}, {loc[1]})')
+#                         real_agent = RealAgent(
+#                                 arglist=arglist,
+#                                 name='agent-'+str(len(real_agents)+1),
+#                                 id_color=COLORS[len(real_agents)],
+#                                 recipes=recipes)
+
+                        # MAKE AGENT 2 A "HUMAN"
+                        print(f'Initializing HybridAgent {len(real_agents)+1} at location ({loc[0]}, {loc[1]})')
+                        real_agent = HybridAgent(
                             arglist=arglist,
                             name='agent-'+str(len(real_agents)+1),
                             id_color=COLORS[len(real_agents)],
                             recipes=recipes)
+                    # ----------------------------------------
+    
                     real_agents.append(real_agent)
 
     return real_agents
@@ -105,7 +165,9 @@ def main_loop(arglist):
 
         # Agents
         for agent in real_agents:
-            agent.refresh_subtasks(world=env.world)
+            # Only RealAgent needs to refresh subtasks
+            if not isinstance(agent, FetchingAgent):
+                agent.refresh_subtasks(world=env.world)
 
         # Saving info
         bag.add_status(cur_time=info['t'], real_agents=real_agents)
@@ -116,14 +178,73 @@ def main_loop(arglist):
     bag.set_termination(termination_info=env.termination_info,
             successful=env.successful)
 
+
+# -----------------------
+# -----------------------
+# KIRIN ADDED
+def main_gr_experiments(arglist):
+    """
+    Main function for running goal recognition experiments with all agents using policies
+    """
+    # Fix random seed for reproducibility
+    fix_seed(seed=arglist.seed)
+    
+    # Parse observation levels
+    obs_levels = [float(x) for x in arglist.obs_levels.split(',')]
+    
+    # Create the experiment with the specified observation levels
+    experiment = OvercookedGRExperiment(arglist, obs_levels=obs_levels)
+    
+    # Setup environment and recognizer
+    experiment.setup()
+    
+    # Run the experiment with all agents using policies
+    print("Running experiments with all agents using policies")
+    results = experiment.run(num_trials=arglist.num_trials)
+    
+    # Visualize both agents working together with the policy
+    if arglist.record:
+        print("\nVisualizing agent behavior with policy (recording enabled)")
+    else:
+        print("\nVisualizing agent behavior with policy")
+        
+#     # Run visualization for each recipe
+#     for recipe_idx in range(len(experiment.recipes)):
+#         print(f"\nVisualizing recipe {recipe_idx+1}/{len(experiment.recipes)}: {experiment.recipes[recipe_idx]}")
+#         success = experiment.visualize_agent_behavior(
+#             recipe_idx=recipe_idx,
+#             max_steps=arglist.max_num_timesteps,
+#             render_delay=0.2  # Adjust this for slower/faster visualization
+#         )
+#         if success:
+#             print(f"Visualization for recipe {recipe_idx+1} completed successfully!")
+#         else:
+#             print(f"Visualization for recipe {recipe_idx+1} did not reach the goal within {arglist.max_num_timesteps} steps")
+    
+#     print("\nGoal Recognition experiments completed.")
+#     return results
+# -----------------------
+
+
 if __name__ == '__main__':
     arglist = parse_arguments()
-    if arglist.play:
+    
+    # -----------------------
+    # -----------------------
+    # KIRIN ADDED
+    if arglist.gr_experiments:
+        print("Running Goal Recognition experiments")
+        main_gr_experiments(arglist)
+    # -----------------------
+        
+    elif arglist.play:
+        print("Running interactive play mode")
         env = gym.envs.make("gym_cooking:overcookedEnv-v0", arglist=arglist)
         env.reset()
         game = GamePlay(env.filename, env.world, env.sim_agents)
         game.on_execute()
     else:
+        print("Running regular Overcooked experiment")
         model_types = [arglist.model1, arglist.model2, arglist.model3, arglist.model4]
         assert len(list(filter(lambda x: x is not None,
             model_types))) == arglist.num_agents, "num_agents should match the number of models specified"

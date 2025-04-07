@@ -29,6 +29,8 @@ class GamePlay(Game):
             for gridsquare in gridsquares:
                 self.gridsquares.append(gridsquare)
                 self.gridsquare_types[name].add(gridsquare.location)
+        
+        self.sim_agents_store = sim_agents
 
 
     def on_event(self, event):
@@ -55,7 +57,7 @@ class GamePlay(Game):
             if event.key in KeyToTuple.keys():
                 action = KeyToTuple[event.key]
                 self.current_agent.action = action
-                interact(self.current_agent, self.world)
+                interact(self.current_agent, self.world, self.sim_agents_store)
 
     def on_execute(self):
         if self.on_init() == False:

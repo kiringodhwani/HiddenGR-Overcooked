@@ -96,7 +96,8 @@ class E2E_BRTDP:
             sim_agent = list(filter(lambda a: a.name == agent.name, sim_state.sim_agents))[0]
             sim_agent.action = action
             interact(agent=sim_agent,
-                     world=sim_state.world)
+                     world=sim_state.world,
+                     sim_agents=sim_state.sim_agents)
 
         # Joint
         else:
@@ -105,8 +106,8 @@ class E2E_BRTDP:
             sim_agent_1 = list(filter(lambda a: a.name == agent_1.name, sim_state.sim_agents))[0]
             sim_agent_2 = list(filter(lambda a: a.name == agent_2.name, sim_state.sim_agents))[0]
             sim_agent_1.action, sim_agent_2.action = action
-            interact(agent=sim_agent_1, world=sim_state.world)
-            interact(agent=sim_agent_2, world=sim_state.world)
+            interact(agent=sim_agent_1, world=sim_state.world, sim_agents=sim_state.sim_agents)
+            interact(agent=sim_agent_2, world=sim_state.world, sim_agents=sim_state.sim_agents)
             assert sim_agent_1.location != sim_agent_2.location, 'action {} led to state {}'.format(action, sim_state.get_repr())
 
         # Track this state in value function and repr dict

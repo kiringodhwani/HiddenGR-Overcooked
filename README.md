@@ -88,26 +88,26 @@ The use of SimAgents and decision-making agents allows for clean separation of p
 1. The environment creates SimAgents for visualization and physics handling. 
 2. Outside the environment, decision-making agents (RealAgent, HybridAgent, FetchingAgent) are initialized with the same names, with there being one decision-making agent for each SimAgent (i.e., agent-1 = FetchingAgent, agent-2 = HybridAgent).
 3. At each timestep:
-    * Each decision-making agent receives the current observation (which includes the SimAgents)
-    * The decision-making agent finds its corresponding SimAgent in the observation
-    * The decision-making agent updates its state based on the SimAgent (location, holding)
-    * The decision-making agent decides what action to take
-    * The action is passed to the environment, which updates the SimAgent accordingly
+    1. Each decision-making agent receives the current observation (which includes the SimAgents)
+    2. The decision-making agent finds its corresponding SimAgent in the observation
+    3. The decision-making agent updates its state based on the SimAgent (location, holding)
+    4. The decision-making agent decides what action to take
+    5. The action is passed to the environment, which updates the SimAgent accordingly
 
 ### RealAgent vs. FetchingAgent vs. HybridAgent 
 
 **RealAgent** (from [the original Overcooked code](https://github.com/rosewang2008/gym-cooking/blob/main/gym_cooking/utils/agent.py)):
-- Uses Bayesian Delegation (as defined in this paper) to rapidly infer the hidden intentions of others by inverse planning. 
-- Navigation planning using BRTDP (Bounded Real-Time Dynamic Programming)
+- Uses Bayesian Delegation (as defined in the [Too many cooks paper](https://arxiv.org/abs/2003.11778)) to rapidly infer the hidden intentions of others by inverse planning. 
+- Navigation planning using BRTDP (Bounded Real-Time Dynamic Programming).
 
-**FetchingAgent**: This is the "**fetcher**" in our experiments. Represents a specialized assistant that observes another agent's behavior (the "human" agent) to determine what object to fetch (sushi, water, egg, or bread), fetches said object, and delivers it to the other agent ("human" agent). Uses a state machine with states: OBSERVE, FETCH, DELIVER, RETURN, and DONE…
+**FetchingAgent**: This is the "**fetcher**" in our experiments. Represents a specialized assistant that observes another agent's behavior (the "human" agent) to determine what object to fetch (sushi, water, egg, or bread), fetches said object, and delivers it to the other agent. Uses a state machine with states: OBSERVE, FETCH, DELIVER, RETURN, and DONE…
 - OBSERVE: Monitors the human agent's movement patterns and calculates the total change in shortest walkable path from the human agent to every target object (Sushi, Water, Egg, Bread) to determine which object the human is trying to reach.
 - FETCH: Navigates through the environment using pathfinding to locate and pick up the identified target object.
 - DELIVER: Carries the retrieved object to the human agent and transfers it when adjacent.
 - RETURN: Returns to its original starting position after successfully delivering the object.
 - DONE: Remains stationary at its original position, indicating successful completion of the fetch-and-deliver cycle.
 
-**HybridAgent**: This is the "**human**" in our experiments. Simulates a human that starts with simple behavior navigating towards its target item (sushi, water, egg, or bread) and then switches to more complex planning (RealAgent) that responds to the behavior of the "fetcher" agent. Uses a state machine with states: SIMPLE and REAL_AGENT…
+**HybridAgent**: This is the "**human**" in our experiments. Simulates a human that starts with simple behavior navigating towards its target item (sushi, water, egg, or bread) and then switches to more complex planning (same as RealAgent) that responds to the behavior of the "fetcher" agent. Uses a state machine with states: SIMPLE and REAL_AGENT…
 - Begins in "SIMPLE" mode with direct path planning to its target item (sushi, water, egg, or bread).
 - Transitions to "REAL_AGENT" mode when the fetcher agent moves.
 - When transitioning, it creates a full RealAgent internally and delegates decisions to it.
@@ -129,7 +129,6 @@ def __init__(self, name, color, arglist=None, recipes=None):
     self.name = name
     self.color = color
     # Store other required attributes
-    
 ```
 
 2. **Implement the select_action method**:
@@ -173,7 +172,7 @@ def all_done(self):
     return False
 ```
 
-4. **Implement necessary utility methods*: 
+4. **Implement necessary utility methods**: 
 
 **get_holding** – standardize how held objects are reported
 
@@ -196,7 +195,7 @@ def __str__(self):
 
 ### Defining Agent Types in Your Experiments
 
-To choose the decision-making agents used in your experiments, you will need to use the ***initialize_agents()*** function in **main.py** (gym-cooking/gym_cooking/main.py). In the below example, my level for the experiment consists of two agents, and I make agent-1 a FetchingAgent ("fetcher") and agent-2 a HybridAgent ("human"):
+To choose the decision-making agents used in your experiments, you will need to use the **initialize_agents()** function in **main.py** (gym-cooking/gym_cooking/main.py). In the below example, my level for the experiment consists of two agents, and I make agent-1 a FetchingAgent ("fetcher") and agent-2 a HybridAgent ("human"):
 
 ```
 def initialize_agents(arglist):

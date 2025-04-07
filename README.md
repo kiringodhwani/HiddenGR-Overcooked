@@ -14,7 +14,11 @@ The code here is derived from "Too many cooks: Bayesian inference for coordinati
 ##  Hungry-Thirsty Environment
 The hungry-thirsty environment is designed for exactly 2 agents: one "fetcher" agent and one "human" agent. The "fetcher" agent is tasked with recognizing what food item (sushi, water, egg, or bread) the "human" agent wants based on the "human" agent's movements. At timestep 0, the "fetcher" agent calculates the shortest walkable path from the initial location of the "human" to all food items in the environment. In subsequent timesteps, the "fetcher" agent computes the total change in shortest walkable path from the "human" to all food items in the environment. If there is more negative change in shortest walkable path for one food item compared to the others, then the "human" is approaching that food item, indicating that it is the item that they want. The "fetcher" then fetches that item and delivers it to the "human". The below [**Youtube Video:**](https://youtu.be/JN4FOKtD4w0) provides examples (note that the woman agent wearing blue is the "fetcher" and the man agent wearing pink is the "human"). 
 
-[<img width="400" alt="Image" src="https://github.com/user-attachments/assets/bdb0834f-0fd7-4d32-85e6-36d31e560d32" />](https://youtu.be/JN4FOKtD4w0)
+<p align="center">
+  <a href="https://youtu.be/JN4FOKtD4w0">
+    <img width="400" alt="Image" src="https://github.com/user-attachments/assets/bdb0834f-0fd7-4d32-85e6-36d31e560d32" />
+  </a>
+</p>
 
 ## Installation
 

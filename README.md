@@ -86,7 +86,7 @@ The original Overcooked code implements a clear separation between agents that m
 
 The use of SimAgents and decision-making agents allows for clean separation of physical simulation and decision-making logic. See the below explanation of how these agents work together: 
 1. The environment creates SimAgents for visualization and physics handling. 
-2. Outside the environment, decision-making agents (RealAgent, HybridAgent, FetchingAgent) are initialized with the same names.
+2. Outside the environment, decision-making agents (RealAgent, HybridAgent, FetchingAgent) are initialized with the same names, with there being one decision-making agent for each SimAgent (i.e., agent-1 = FetchingAgent, agent-2 = HybridAgent).
 3. At each timestep:
     * Each decision-making agent receives the current observation (which includes the SimAgents)
     * The decision-making agent finds its corresponding SimAgent in the observation
@@ -96,18 +96,18 @@ The use of SimAgents and decision-making agents allows for clean separation of p
 
 ### RealAgent vs. FetchingAgent vs. HybridAgent 
 
-**RealAgent** (from [the original Overcooked code](https://github.com/rosewang2008/gym-cooking/blob/main/gym_cooking/utils/agent.py)):
-- Use Bayesian Delegation (as defined in this paper) to rapidly infer the hidden intentions of others by inverse planning. 
+1. **RealAgent** (from [the original Overcooked code](https://github.com/rosewang2008/gym-cooking/blob/main/gym_cooking/utils/agent.py)):
+- Uses Bayesian Delegation (as defined in this paper) to rapidly infer the hidden intentions of others by inverse planning. 
 - Navigation planning using BRTDP (Bounded Real-Time Dynamic Programming)
 
-**FetchingAgent**: This is the "**fetcher**" in our experiments. Represents a specialized assistant that observes another agent's behavior (the "human" agent) to determine what object to fetch (sushi, water, egg, or bread), fetches said object, and delivers it to the other agent ("human" agent). Uses a state machine with states: OBSERVE, FETCH, DELIVER, RETURN, and DONE…
+2. **FetchingAgent**: This is the "**fetcher**" in our experiments. Represents a specialized assistant that observes another agent's behavior (the "human" agent) to determine what object to fetch (sushi, water, egg, or bread), fetches said object, and delivers it to the other agent ("human" agent). Uses a state machine with states: OBSERVE, FETCH, DELIVER, RETURN, and DONE…
 - OBSERVE: Monitors the human agent's movement patterns and calculates the total change in shortest walkable path from the human agent to every target object (Sushi, Water, Egg, Bread) to determine which object the human is trying to reach.
 - FETCH: Navigates through the environment using pathfinding to locate and pick up the identified target object.
 - DELIVER: Carries the retrieved object to the human agent and transfers it when adjacent.
 - RETURN: Returns to its original starting position after successfully delivering the object.
 - DONE: Remains stationary at its original position, indicating successful completion of the fetch-and-deliver cycle.
 
-**HybridAgent**: This is the "**human**" in our experiments. Simulates a human that starts with simple behavior navigating towards its target item (sushi, water, egg, or bread) and then switches to more complex planning (RealAgent) that responds to the behavior of the "fetcher" agent. Uses a state machine with states: SIMPLE and REAL_AGENT…
+3. **HybridAgent**: This is the "**human**" in our experiments. Simulates a human that starts with simple behavior navigating towards its target item (sushi, water, egg, or bread) and then switches to more complex planning (RealAgent) that responds to the behavior of the "fetcher" agent. Uses a state machine with states: SIMPLE and REAL_AGENT…
 - Begins in "SIMPLE" mode with direct path planning to its target item (sushi, water, egg, or bread).
 - Transitions to "REAL_AGENT" mode when the fetcher agent moves.
 - When transitioning, it creates a full RealAgent internally and delegates decisions to it.

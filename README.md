@@ -43,7 +43,7 @@ where `<number>` is the number of agents interacting in the environment (the Hun
 
 `python main.py --num-agents 2 --level DesignOne --model1 bd --model2 bd --record`
 
-This runs a Hungry-Thirsty experiment with two agents (agent-1 = "fetcher", agent-2 = "human") on the 'DesignOne' level. It also **records** the experiment, such that you can watch a replay afterwards. Please ignore the model selections ("--model1 bd --model2 bd"). Right now, we hard code agent-1 as the "fetcher" and agent-2 as the "human" in the **initialize_agents()** function in **main.py** (gym-cooking/gym_cooking/main.py).
+This runs a Hungry-Thirsty experiment with two agents (agent-1 = "fetcher", agent-2 = "human") on the 'DesignOne.txt' level. It also **records** the experiment, such that you can watch a replay afterwards. Please ignore the model selections ("--model1 bd --model2 bd"). Right now, we hard code agent-1 as the "fetcher" and agent-2 as the "human" in the **initialize_agents()** function in **main.py** (gym-cooking/gym_cooking/main.py).
 
 If you would like an agent to use Bayesian Delegation instead of being a "fetcher" or "human", then you must edit the initialize_agents() function in main.py to define said agent as a **RealAgent**. For the different agent definitions, please see gym-cooking/gym_cooking/utils/agent.py as well as the [Agents](#agents) section of this README. 
 
@@ -55,7 +55,7 @@ To customize the level for the experiment, please see [**the Design and Customiz
 
 To explore a level (environment) that you are building, run the below command in **gym-cooking/gym_cooking/** :
 
-`python main.py --num-agents 2 --level {level name} --play`
+`python main.py --num-agents <number> --level <level name> --play`
 
 This will open up the environment in Pygame. You can manually control the agents using the arrow keys. Only one agent can be controlled at a time, but you can toggle between agents by pressing 1, 2, 3, or 4 (up until the actual number of agents defined in the level). Hit the Enter key to save a timestamped image of the current screen to misc/game/screenshots.
 
@@ -65,7 +65,7 @@ When you specify the --record flag in your command to run the experiment, you ca
 
 ### Tutorial Video
 
-Below is a [***demo video***](https://youtu.be/f6NuPhPtyD0) showing the entire process of creating and running your own experiment. The video shows how to customize your own level/environment, manually test the environment, run an experiment on the environment, and watch a replay of the experiment...
+Below is a [**demo video**](https://youtu.be/f6NuPhPtyD0) showing the entire process of creating and running your own experiment. The video shows how to customize your own level/environment, manually test the environment, run an experiment in the environment, and watch a replay of the experiment...
 
 [<img width="1416" alt="Image" src="https://github.com/user-attachments/assets/5fb9775e-8649-4459-84fe-d39a85dc8d7f" />](https://youtu.be/f6NuPhPtyD0)
 
@@ -88,11 +88,11 @@ The use of SimAgents and decision-making agents allows for clean separation of p
 1. The environment creates SimAgents for visualization and physics handling. 
 2. Outside the environment, decision-making agents (RealAgent, HybridAgent, FetchingAgent) are initialized with the same names.
 3. At each timestep:
-    a. Each decision-making agent receives the current observation (which includes the SimAgents)
-    b. The decision-making agent finds its corresponding SimAgent in the observation
-    c. The decision-making agent updates its state based on the SimAgent (location, holding)
-    d. The decision-making agent decides what action to take
-    e. The action is passed to the environment, which updates the SimAgent accordingly
+    * Each decision-making agent receives the current observation (which includes the SimAgents)
+    * The decision-making agent finds its corresponding SimAgent in the observation
+    * The decision-making agent updates its state based on the SimAgent (location, holding)
+    * The decision-making agent decides what action to take
+    * The action is passed to the environment, which updates the SimAgent accordingly
 
 ### RealAgent vs. FetchingAgent vs. HybridAgent 
 

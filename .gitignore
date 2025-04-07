@@ -5,6 +5,8 @@
 *.pdf
 *.mov
 
+gym_cooking/overcooked/
+
 # Metrics and data
 gym_cooking/misc/metrics/*data*/
 gym_cooking/misc/metrics/*graph*/

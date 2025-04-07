@@ -1,4 +1,4 @@
-# Hidden Goal Recognition (GR) in the Overcooked Environment"
+# Hidden Goal Recognition (GR) in Overcooked"
 
 Contents:
 - [Introduction](#introduction)
